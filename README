@@ -1,0 +1,37 @@
+NAME: Richard Tang
+EMAIL: richardcxtang@ucla.edu
+ID: 305348008
+
+Lab 3A
+
+*** Files 
+- Makefile: Targets for building the project
+    * default Builds the lab3a binary from lab3a.c and ext2_fs.h 
+    * clean   Removes binary files and tarballs created from the Makefile
+    * dist    Creates a distribution tarball containing the source files
+- README: Project description, notes, and sources 
+- lab3a.c: Source file for program that processes EXT2 image files 
+- ext2_fs.h: Contains structure definitions of various data structures used 
+    in the EXT2 system implementation
+    
+*** Notes
+- The project assumes that there is only one block group in the file.
+  This assumption comes from the project specifications and discussion
+  section's explanation of the project.
+- The location of the superblock and group descriptor were hard to 
+  understand at first when reading through the description of the EXT2
+  file system structure. An interesting note is that the group descriptor 
+  can be both in the zeroth block group or the first block group depending
+  on the size.
+- Using mkfs.ext2, the program has been tested to also work on systems
+  where the block size is larger than 1kb, which was a limitation of the
+  trivial.img and ext2_test.img given for testing.
+
+*** Sources
+- https://www.tutorialspoint.com/c_standard_library/c_function_strftime.htm
+Examples on how to use the strftime function
+- http://www.nongnu.org/ext2-doc/ext2.html#i-blocks
+Extensive documentation on the inner workings of the EXT2 filesystem
+- https://embeddedartistry.com/blog/2017/07/05/printf-a-limited-number-of-characters-from-a-string/
+Example of special feature of printf to print only n characters of a string 
+
