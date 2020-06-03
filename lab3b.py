@@ -167,7 +167,7 @@ def process_directory_consistency_audit(fs_instance):
                 # TODO: inconsistencies found
             if (directory_entry.name == '.'):
                 if (int(directory_inode) != file_inode):
-                    print('DIRECTORY INODE {0} name \'{1}\' LINK TO INODE {2} SHOULD BE {0}'.format(directory_inode, directory_entry.name, file_inode))
+                    print('DIRECTORY INODE {0} NAME \'{1}\' LINK TO INODE {2} SHOULD BE {0}'.format(directory_inode, directory_entry.name, file_inode))
                     # TODO: inconsistencies found
             elif (directory_entry.name == '..'):
                 pass  # TODO: is this case needed?
