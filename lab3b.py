@@ -96,6 +96,89 @@ def process_ext2_report(filename):
                     fs_instance.indirect_blocks[parent_inode] = []
                 fs_instance.indirect_blocks[parent_inode].append(EXT2_Indirect_Block(parent_inode, depth, logical_offset, block_num, ref_block_num))
 
+    process_inode_allocation_audit(fs_instance)
+    process_directory_consistency_audit(fs_instance)
+
+def process_inode_allocation_audit(fs_instance):
+    """
+    Checks for I-node allocation inconsistencies.
+    Prints all inconsistencies to standard output.
+    """
+    inodes_allocation_list = [False] * (int(fs_instance.num_of_inodes) + 1)
+
+    # Place free inodes on table
+    for free_inode in fs_instance.free_inodes:
+        inodes_allocation_list[free_inode] = True
+
+    for inode_number in fs_instance.inodes:
+        if (inodes_allocation_list[int(inode_number)]):
+            print('ALLOCATED INODE {0} ON FREELIST'.format(inode_number))
+            # TODO: inconsistencies found
+        else:
+            inodes_allocation_list[int(inode_number)] = True
+
+    reserved_inodes = [1, 3, 4, 5, 6, 7, 8, 9, 10]
+    for inode_number in reserved_inodes:
+        inodes_allocation_list[inode_number] = True
+
+    for index, inode_allocated in enumerate(inodes_allocation_list[1:], 1):
+        if (not inode_allocated):
+            print('UNALLOCATED INODE {0} NOT ON FREELIST'.format(index))
+            # TODO: inconsistencies found
+
+def process_directory_consistency_audit(fs_instance):
+    """
+    Checks for directory inconsistencies.
+    Prints all inconsistencies to standard output.
+    """
+    reference_counts = {}
+    for directory in fs_instance.directories.values():
+        for directory_entry in directory:
+            file_inode = directory_entry.file_inode
+            if (file_inode not in reference_counts):
+                reference_counts[file_inode] = 0
+            reference_counts[file_inode] = reference_counts[file_inode] + 1
+
+    for inode_number in fs_instance.inodes:
+        link_count = fs_instance.inodes[inode_number].link_count
+        if (inode_number not in reference_counts):
+            reference_count = 0
+        else:
+            reference_count = reference_counts[inode_number]
+        if int(link_count) != reference_count:
+            print('INODE {0} HAS {1} LINKS BUT LINKCOUNT IS {2}'.format(inode_number, reference_count, link_count))
+            # TODO: inconsistencies found
+
+    unallocated_inodes = set()
+    for inode_number in fs_instance.free_inodes:
+        unallocated_inodes.add(inode_number)
+    for inode in fs_instance.inodes:
+        if (int(inode) in unallocated_inodes):
+            unallocated_inodes.remove(int(inode))
+
+    for directory_inode in fs_instance.directories:
+        for directory_entry in fs_instance.directories[directory_inode]:
+            file_inode = int(directory_entry.file_inode)
+            if (file_inode < 1 or file_inode > int(fs_instance.num_of_inodes) + 1):
+                print('DIRECTORY INODE {0} NAME \'{1}\' INVALID INODE {2}'.format(directory_inode, directory_entry.name, file_inode))
+                # TODO: inconsistencies found
+            if (file_inode in unallocated_inodes):
+                print('DIRECTORY INODE {0} NAME \'{1}\' UNALLOCATED INODE {2}'.format(directory_inode, directory_entry.name, file_inode))
+                # TODO: inconsistencies found
+            if (directory_entry.name == '.'):
+                if (int(directory_inode) != file_inode):
+                    print('DIRECTORY INODE {0} name \'{1}\' LINK TO INODE {2} SHOULD BE {0}'.format(directory_inode, directory_entry.name, file_inode))
+                    # TODO: inconsistencies found
+            elif (directory_entry.name == '..'):
+                pass  # TODO: is this case needed?
+
+    for directory_entry in fs_instance.directories['2']:
+        if (directory_entry.name == '..'):
+            if (directory_entry.file_inode != '2'):
+                print('DIRECTORY INODE 2 NAME \'..\' LINK TO INODE {0} SHOULD BE 2'.format(directory_entry.file_inode))
+                # TODO: inconsistencies found
+            break
+
 if __name__ == '__main__':
     filename = process_arguments(sys.argv)
     process_ext2_report(filename)
