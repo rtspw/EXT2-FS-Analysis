@@ -15,5 +15,5 @@ lab3b: lab3b.py
 clean:
 	rm -f lab3b-$(studentID).tar.gz lab3b
 
-dist: lab3a.c README Makefile ext2_fs.h
+dist: lab3b.py README Makefile
 	tar -czf lab3b-$(studentID).tar.gz lab3b.py README Makefile
