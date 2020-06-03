@@ -17,8 +17,11 @@ class EXT2_Filesystem():
         self.num_of_inodes = None 
         self.block_size = None
         self.inode_size = None
-        self.free_blocks = []
-        self.free_inodes = []
+        self.free_block_bitmap_index = None
+        self.free_inode_bitmap_index = None
+        self.first_inode_index = None
+        self.free_blocks = set()
+        self.free_inodes = set()
         self.inodes = {}
         self.directories = {}
         self.indirect_blocks = {}
@@ -53,7 +56,7 @@ def print_usage_string(program_name):
 def process_arguments(arguments):
     if (len(arguments) != 2):
         program_name = arguments[0]
-        print_usage_string(arguments[0])
+        print_usage_string(program_name)
         sys.exit(Exit_Code.PROGRAM_ERROR.value)
     filename = arguments[1]
     return filename
@@ -66,16 +69,21 @@ def process_ext2_report(filename):
             line_type, *data = row
             if (line_type == 'BFREE'):
                 free_block_num = int(data[0])
-                fs_instance.free_blocks.append(free_block_num)
+                fs_instance.free_blocks.add(free_block_num)
             elif (line_type == 'IFREE'):
                 free_inode_num = int(data[0])
-                fs_instance.free_inodes.append(free_inode_num)
+                fs_instance.free_inodes.add(free_inode_num)
             elif (line_type == 'SUPERBLOCK'):
                 num_of_blocks, num_of_inodes, block_size, inode_size, *_ = data
                 fs_instance.num_of_blocks = num_of_blocks
                 fs_instance.num_of_inodes = num_of_inodes
                 fs_instance.block_size = block_size
                 fs_instance.inode_size = inode_size
+            elif (line_type == 'GROUP'):
+                *_, free_block_bitmap, free_inode_bitmap, first_inode_index = data
+                fs_instance.free_block_bitmap_index = int(free_block_bitmap)
+                fs_instance.free_inode_bitmap_index = int(free_inode_bitmap)
+                fs_instance.first_inode_index = int(first_inode_index)
             elif (line_type == 'INODE'):
                 inode_num = data[0]
                 file_type = data[1]
@@ -95,9 +103,22 @@ def process_ext2_report(filename):
                 if (parent_inode not in fs_instance.indirect_blocks):
                     fs_instance.indirect_blocks[parent_inode] = []
                 fs_instance.indirect_blocks[parent_inode].append(EXT2_Indirect_Block(parent_inode, depth, logical_offset, block_num, ref_block_num))
+    return fs_instance
+    
+def process_block_consistency_audit(fs_instance):
+    """
+    Checks if all block pointers are valid and block free-list is consistent.
+    Prints all inconsistencies to standard output. 
+    """
+    print(fs_instance.first_inode_index)
+    for inode_num, inode in fs_instance.inodes.items():
+        if (inode.filetype == 's'): continue
+        for direct_block in inode.direct_blocks:
+            if (int(direct_block) < 0 or int(direct_block) > int(fs_instance.num_of_blocks)):
+                logical_offset = -1
+                print('INVALID BLOCK {0} IN INODE {1} AT OFFSET {2}'.format(direct_block, inode_num, logical_offset))
+                # TODO: inconsistencies found
 
-    process_inode_allocation_audit(fs_instance)
-    process_directory_consistency_audit(fs_instance)
 
 def process_inode_allocation_audit(fs_instance):
     """
@@ -184,5 +205,8 @@ def process_directory_consistency_audit(fs_instance):
 
 if __name__ == '__main__':
     filename = process_arguments(sys.argv)
-    process_ext2_report(filename)
+    fs_instance = process_ext2_report(filename)
+    process_block_consistency_audit(fs_instance)
+    process_inode_allocation_audit(fs_instance)
+    process_directory_consistency_audit(fs_instance)
 
