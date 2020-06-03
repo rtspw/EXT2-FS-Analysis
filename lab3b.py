@@ -156,6 +156,13 @@ def process_directory_consistency_audit(fs_instance):
         if (int(inode) in unallocated_inodes):
             unallocated_inodes.remove(int(inode))
 
+    parent_directories = {}
+    for directory_inode in fs_instance.directories:
+        for directory_entry in fs_instance.directories[directory_inode]:
+            if (directory_entry.name != '..' and directory_entry.name != '.'):
+                parent_directories[directory_entry.file_inode] = directory_inode
+    parent_directories['2'] = '2'
+
     for directory_inode in fs_instance.directories:
         for directory_entry in fs_instance.directories[directory_inode]:
             file_inode = int(directory_entry.file_inode)
@@ -167,17 +174,13 @@ def process_directory_consistency_audit(fs_instance):
                 # TODO: inconsistencies found
             if (directory_entry.name == '.'):
                 if (int(directory_inode) != file_inode):
-                    print('DIRECTORY INODE {0} name \'{1}\' LINK TO INODE {2} SHOULD BE {0}'.format(directory_inode, directory_entry.name, file_inode))
+                    print('DIRECTORY INODE {0} NAME \'{1}\' LINK TO INODE {2} SHOULD BE {0}'.format(directory_inode, directory_entry.name, file_inode))
                     # TODO: inconsistencies found
             elif (directory_entry.name == '..'):
-                pass  # TODO: is this case needed?
-
-    for directory_entry in fs_instance.directories['2']:
-        if (directory_entry.name == '..'):
-            if (directory_entry.file_inode != '2'):
-                print('DIRECTORY INODE 2 NAME \'..\' LINK TO INODE {0} SHOULD BE 2'.format(directory_entry.file_inode))
-                # TODO: inconsistencies found
-            break
+                parent_inode = int(parent_directories[directory_inode])
+                if (file_inode != parent_inode):
+                    print('DIRECTORY INODE {0} NAME \'..\' LINK TO INODE {1} SHOULD BE {2}'.format(directory_inode, file_inode, parent_inode))
+                    # TODO: inconsistencies found
 
 if __name__ == '__main__':
     filename = process_arguments(sys.argv)
