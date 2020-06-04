@@ -9,7 +9,7 @@ studentID = 305348008
 default: lab3b
 
 lab3b: lab3b.py
-	echo -n '#!/usr/bin/env bash\npython3 lab3b.py $$@' > lab3b
+	printf '#!/usr/bin/env bash\npython3 lab3b.py $$@' > lab3b
 	chmod u+x ./lab3b
 
 clean:
