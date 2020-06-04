@@ -75,6 +75,7 @@ def process_ext2_report(filename):
     Scans the CSV report and adds it to EXT2_Filesystem instance data structure
     For each row, it checks the first entry for the line type, then puts the
     remaining data in the appropriate data structure. 
+    Returns the filesystem structure instance.
     """
     fs_instance = EXT2_Filesystem()
     with open(filename, 'r', newline='') as csvfile:
@@ -159,7 +160,11 @@ def is_reserved_block(fs_instance, block_num):
     first_non_reserved_block = get_first_non_reserved_block(fs_instance)
     return int(block_num) < first_non_reserved_block
 
-def get_logical_offset(fs_instance, block_num, depth = 0, direct_block_index = None):
+def get_logical_offset(fs_instance, depth = 0, direct_block_index = None):
+    """
+    Calculates the logical offset (block offset treating the file as continuous) using
+    the depth (indirectness).
+    """
     if (depth == 0): return direct_block_index
     num_of_entries = int(fs_instance.block_size) // 4
     direct_block_size = 12
@@ -183,7 +188,7 @@ def check_block_consistency(fs_instance, inode_num, block_num, depth = 0, direct
     """
     if (block_num == 0): return
     block_type = (['', 'INDIRECT ', 'DOUBLE INDIRECT ', 'TRIPLE INDIRECT '])[depth]
-    logical_offset = get_logical_offset(fs_instance, block_num, depth, direct_block_index)
+    logical_offset = get_logical_offset(fs_instance, depth, direct_block_index)
     if (block_num < 0 or block_num >= int(fs_instance.num_of_blocks)):
         print('INVALID {0}BLOCK {1} IN INODE {2} AT OFFSET {3}'.format(block_type, block_num, inode_num, logical_offset))
         set_global_exit_code()
@@ -195,6 +200,10 @@ def check_block_consistency(fs_instance, inode_num, block_num, depth = 0, direct
         set_global_exit_code()
     
 def check_block_free_list_consistency(fs_instance):
+    """
+    Checks that all blocks are either in the free list or allocated but not both or neither.
+    Prints all inconsistencies to standard output.
+    """
     first_non_reserved_block = get_first_non_reserved_block(fs_instance)
     for block_num in range(first_non_reserved_block, int(fs_instance.num_of_blocks)):
         if (block_num in fs_instance.free_blocks and str(block_num) in fs_instance.referenced_blocks):
